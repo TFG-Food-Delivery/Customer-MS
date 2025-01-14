@@ -112,6 +112,20 @@ export class CustomersController {
     return this.customersService.restartCart(restartCartPayload);
   }
 
+  @MessagePattern('setCart')
+  setCart(
+    @Payload()
+    setCartPayload: {
+      id: string;
+      items: { dishId: string; quantity: number }[];
+    },
+  ) {
+    return this.customersService.setCart(
+      setCartPayload.id,
+      setCartPayload.items,
+    );
+  }
+
   /**
    * Updates a customer's details.
    * @param updateCustomerDto - The data transfer object containing customer update details.

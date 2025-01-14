@@ -208,6 +208,44 @@ export class CustomersService extends PrismaClient implements OnModuleInit {
     }
   }
 
+  async setCart(id: string, items: { dishId: string; quantity: number }[]) {
+    const customer = await this.findOneCustomer(id);
+
+    const cart = await this.cart.findUnique({
+      where: { customerId: customer.id },
+      include: { items: true },
+    });
+
+    if (!cart) {
+      throw new RpcException({
+        status: HttpStatus.NOT_FOUND,
+        message: `Cart not found for customer with ID ${customer.id}`,
+      });
+    }
+
+    // Primero eliminamos todos los items existentes
+    await this.cartItem.deleteMany({
+      where: { cartId: cart.id },
+    });
+    // Luego creamos los nuevos items
+    const cartItemPromises = items.map((item) => {
+      return this.cartItem.create({
+        data: {
+          cartId: cart.id,
+          dishId: item.dishId,
+          quantity: item.quantity,
+        },
+      });
+    });
+
+    await Promise.all(cartItemPromises);
+
+    return this.cart.findUnique({
+      where: { id: cart.id },
+      include: { items: true },
+    });
+  }
+
   async restartCart(restartCartPayload) {
     const { customerId } = restartCartPayload;
 
